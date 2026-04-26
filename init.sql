@@ -1,0 +1,7 @@
+-- Создание таблицы users
+CREATE TABLE IF NOT EXISTS users (
+    ID SERIAL PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) NOT NULL UNIQUE,
+    Phone VARCHAR(20) NOT NULL
+);
