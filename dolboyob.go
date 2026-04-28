@@ -11,16 +11,76 @@ import (
 )
 
 var (
-	ErrorDBNotConnect = errors.New("Нет соединения с базой")
-	ErrorUserNotFound = errors.New("Пользователь не найден")
-	ErrorWrongRows    = errors.New("Ошибка при чтении строки")
+	ErrorDBNotConnect  = errors.New("ОШИБКА: Нет соединения с базой")
+	ErrorUserNotFound  = errors.New("ОШИБКА: Пользователь не найден")
+	ErrorWrongRows     = errors.New("ОШИБКА: Ошибка при чтении строки")
+	ErrorDataUpdate    = errors.New("ОШИБКА: Ошибка при изменении данных")
+	ErrorNonexistentID = errors.New("ОШИБКА: Несуществующий ID")
 )
 
 type User struct {
 	ID    int
 	Name  string
 	Email string
-	Phone string
+	Phone string //lox
+}
+
+func PrintAllUsersFromDB(db *sql.DB) {
+	rows, err := db.Query(`
+	SELECT * FROM users
+	`)
+	if err != nil {
+		fmt.Println(ErrorWrongRows)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var ID int
+		var name, email, phone string
+
+		rows.Scan(&ID, &name, &email, &phone)
+		fmt.Printf("ID: %d, Name: %s, Email: %s, Phone: %s\n", ID, name, email, phone)
+	}
+}
+
+func DelUserFromDB(db *sql.DB, ID int) {
+	res, err := db.Exec(`DELETE FROM users WHERE id = $1`, ID)
+	if err != nil {
+		fmt.Println(ErrorDBNotConnect)
+		return
+	}
+	rowsAffected, err := res.RowsAffected()
+	if rowsAffected == 0 {
+		fmt.Println(ErrorUserNotFound)
+		return
+	}
+	fmt.Printf("Пользователь с ID %d удален\n", ID)
+}
+
+func UpdateUserFromDB(db *sql.DB, ID int) {
+	var name, email, phone string
+	fmt.Println("Введите новые данные через пробел (Имя Email Телефон):") 
+	fmt.Scan(&name, &email, &phone) //???????????????????????????????????????????????????????????
+	res, err := db.Exec(`
+        UPDATE users 
+        SET name = $1, email = $2, phone = $3 
+        WHERE id = $4
+    `, name, email, phone, ID)
+
+	if err != nil {
+		fmt.Println(ErrorDataUpdate, err)
+		return
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil{
+		fmt.Println(err)
+		return
+	}
+	if rowsAffected > 0 {
+		fmt.Printf("Пользователь c ID %d успешно обновлен!\n", ID)
+		return
+	}
 }
 
 func main() {
@@ -75,6 +135,9 @@ func main() {
 		fmt.Println("\n=== МЕНЮ ===")
 		fmt.Println("1. Зарегистрироваться")
 		fmt.Println("2. Найти пользователя по ID")
+		fmt.Println("3. Вывести всех пользователей")
+		fmt.Println("4. Изменить пользователя по ID")
+		fmt.Println("5. Удалить пользователя по ID")
 		fmt.Println("0. Выйти")
 		fmt.Print("Выберите действие: ")
 
@@ -114,6 +177,21 @@ func main() {
 			} else {
 				fmt.Printf("👤 Найден: ID: %d | Имя: %s | Email: %s | Тел: %s\n", u.ID, u.Name, u.Email, u.Phone)
 			}
+
+		case "3":
+			PrintAllUsersFromDB(db)
+
+		case "4":
+			var ID int
+			fmt.Printf("Введите ID пользователя, данные которго хотите обновить:")
+			fmt.Scan(&ID)
+			UpdateUserFromDB(db, ID)
+
+		case "5":
+			var ID int
+			fmt.Printf("Введите ID пользователя, данные которого хотите удалить:")
+			fmt.Scan(&ID)
+			DelUserFromDB(db, ID)
 
 		case "0":
 			fmt.Println("Завершение работы...")
