@@ -81,11 +81,8 @@ func UpdateUserFromDB(db *sql.DB, ID int) {
 
 	fmt.Scan(&newData)
 
-	res, err := db.Exec(`
-        UPDATE users 
-        SET $1 = $2
-        WHERE id = $3
-    `, inputField, newData, ID)
+	stroka := fmt.Sprintf("UPDATE users SET %s = $1 WHERE id = $2", inputField)
+	res, err := db.Exec(stroka, newData, ID)
 
 	if err != nil {
 		fmt.Println(ErrorDataUpdate, err)
