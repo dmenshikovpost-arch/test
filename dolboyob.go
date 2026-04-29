@@ -58,14 +58,34 @@ func DelUserFromDB(db *sql.DB, ID int) {
 }
 
 func UpdateUserFromDB(db *sql.DB, ID int) {
-	var name, email, phone string
-	fmt.Println("Введите новые данные через пробел (Имя Email Телефон):") 
-	fmt.Scan(&name, &email, &phone) //???????????????????????????????????????????????????????????
+	var newData, inputField, choice string
+	fmt.Println("Какие данные вы хотите изменить")
+	fmt.Println("1: Имя \n 2: Email \n 3: Телефон")
+
+	fmt.Scan(&choice)
+
+	switch choice {
+	case "1":
+		inputField = "name"
+		fmt.Printf("Введите новое имя:")
+	case "2":
+		inputField = "email"
+		fmt.Printf("Введите новый email:")
+	case "3":
+		inputField = "phone"
+		fmt.Printf("Введите новый номер телефона:")
+	default:
+		fmt.Println("Неверный ввод, попробуйте еще раз")
+		return
+	}
+
+	fmt.Scan(&newData)
+
 	res, err := db.Exec(`
         UPDATE users 
-        SET name = $1, email = $2, phone = $3 
-        WHERE id = $4
-    `, name, email, phone, ID)
+        SET $1 = $2
+        WHERE id = $3
+    `, inputField, newData, ID)
 
 	if err != nil {
 		fmt.Println(ErrorDataUpdate, err)
@@ -73,12 +93,19 @@ func UpdateUserFromDB(db *sql.DB, ID int) {
 	}
 
 	rowsAffected, err := res.RowsAffected()
-	if err != nil{
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	if rowsAffected > 0 {
 		fmt.Printf("Пользователь c ID %d успешно обновлен!\n", ID)
+		var u User
+		err := db.QueryRow("SELECT id, name, email, phone FROM users WHERE id = $1", ID).
+			Scan(&u.ID, &u.Name, &u.Email, &u.Phone)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("ID: %d | Имя: %s | Email: %s | Тел: %s\n", u.ID, u.Name, u.Email, u.Phone)
 		return
 	}
 }
